@@ -6,9 +6,9 @@ import torch.optim as optim
 import pickle
 from torchvision import transforms
 from efficientnet_v2 import efficientnetv2_s
-from torch.utils.data import DataLoader, Dataset
+from torch.utils.data import DataLoader
 from PIL import Image
-import MyDataset
+from MyDataset import MyDataset,classes_index
 import Utils
 import argparse # 提取命令行参数
 
@@ -152,9 +152,9 @@ def demo(args):
 
 if __name__ == '__main__':
     if not os.path.exists(args.data_root + 'index.txt'): # 只生成一次
-        MyDataset.classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
+        classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
     if not os.path.exists(args.data_root + 'index.txt'): # 只生成一次
-        MyDataset.classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
+        classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
  
     if args.mode == 'train':
         train(args)
