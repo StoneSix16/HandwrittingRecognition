@@ -13,7 +13,7 @@ import Utils
 import argparse # 提取命令行参数
 
 parser = argparse.ArgumentParser(description='EfficientNetV2 arguments')
-parser.add_argument('--mode', dest='mode', type=str, default='demo', help='Mode of net')
+parser.add_argument('--mode', dest='mode', type=str, default='train', help='Mode of net')
 parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='Epoch number of training')
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=512, help='Value of batch size')
 parser.add_argument('--lr', dest='lr', type=float, default=0.0001, help='Value of lr')
@@ -32,7 +32,7 @@ def train(args):
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
          transforms.ColorJitter()])  
  
-    train_set = MyDataset(args.data_root + 'train.txt', num_class=args.num_classes, transforms=transform)
+    train_set = MyDataset(args.data_root + 'index.txt', num_class=args.num_classes, transforms=transform)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     device = torch.device('cuda:0')
     # 加载模型
@@ -106,7 +106,7 @@ def evaluate(args):
         print("Warning: No log file")
  
     model.to(torch.device('cuda:0'))
-    test_loader = DataLoader(MyDataset(args.data_root + 'test.txt', num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(MyDataset(args.data_root + 'index.txt', num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
     total = 0.0
     correct = 0.0
     print("Evaluating...")
@@ -151,10 +151,10 @@ def demo(args):
     f.close()
 
 if __name__ == '__main__':
-    if not os.path.exists(args.data_root + 'train.txt'): # 只生成一次
-        MyDataset.classes_index(args.data_root + 'train', args.data_root + 'train.txt', args.num_classes)
-    if not os.path.exists(args.data_root + 'test.txt'): # 只生成一次
-        MyDataset.classes_index(args.data_root + 'test', args.data_root + 'test.txt', args.num_classes)
+    if not os.path.exists(args.data_root + 'index.txt'): # 只生成一次
+        MyDataset.classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
+    if not os.path.exists(args.data_root + 'index.txt'): # 只生成一次
+        MyDataset.classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
  
     if args.mode == 'train':
         train(args)
