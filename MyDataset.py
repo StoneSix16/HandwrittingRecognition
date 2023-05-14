@@ -37,7 +37,7 @@ def classes_index(root, out_path, num_class=None):
         cnt = 0
         for dir in dirs:
             files = os.listdir(os.path.join(root, dir))
-            addr = os.path.join(root, dir, file).replace('\\','/')
             for file in files:
+                addr = os.path.join(root, dir, file).replace('\\','/')
                 f.write(f"{cnt}:{addr}" + '\n')
             cnt+=1
