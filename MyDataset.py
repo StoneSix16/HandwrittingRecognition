@@ -18,11 +18,16 @@ class MyDataset(Dataset):
             self.labels = labels
             self.transforms = transforms
     def __getitem__(self, index):
-        image = Image.open(self.images[index]).convert('RGB')
-        label = self.labels[index]
-        if self.transforms is not None:
-            image = self.transforms(image)
-        return image,label
+        try:
+            image = Image.open(self.images[index]).convert('RGB')
+            label = self.labels[index]
+            if self.transforms is not None:
+                image = self.transforms(image)
+            return image,label
+        except Exception as e:
+            print(e)
+            return self.images[0], self.labels[0]
+
     def __len__(self):
         return len(self.labels)
     
