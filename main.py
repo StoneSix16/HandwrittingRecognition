@@ -4,11 +4,12 @@ import torch.nn as nn
 import torch.nn.functional as  F
 import torch.optim as optim
 import pickle
+import json
 from torchvision import transforms
 from efficientnet_v2 import efficientnetv2_s
 from torch.utils.data import DataLoader
 from PIL import Image
-from MyDataset import MyDataset,classes_index
+from MyDataset import MyDataset
 import Utils
 import argparse # 提取命令行参数
 
@@ -18,6 +19,7 @@ parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='Epoch n
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=512, help='Value of batch size')
 parser.add_argument('--lr', dest='lr', type=float, default=0.0001, help='Value of lr')
 parser.add_argument('--img_size', dest='img_size', type=int, default=32, help='reSize of input image')
+parser.add_argument('--index_root', dest='index_root', type=str, default='./data/', help='Path to index.json')
 parser.add_argument('--data_root', dest='data_root', type=str, default='./data/', help='Path to data')
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
 parser.add_argument('--num_classes', dest='num_classes', type=int, default=3755, help='Classes of character')
@@ -32,7 +34,7 @@ def train(args):
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
          transforms.ColorJitter()])  
  
-    train_set = MyDataset(args.data_root + 'index.txt', num_class=args.num_classes, transforms=transform)
+    train_set = MyDataset(args.data_root, num_class=args.num_classes, transforms=transform)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
     device = torch.device('cuda:0')
     # 加载模型
@@ -120,14 +122,14 @@ def evaluate(args):
     acc = correct / total * 100
     print('Accuracy'': ', acc, '%')
 
-def demo(args):
+def demo(args, char_dict):
     print('==Demo EfficientNetV2===')
     print('Input Image: ', args.demo_img)
     # 这个地方要和train一致，不过colorJitter可有可无
     transform = transforms.Compose(
         [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    img = Image.open(args.demo_img)
+    img = Image.open(args.demo_img).convert('RGB')
     img = transform(img)
     img = img.unsqueeze(0) # 增维
     model = efficientnetv2_s(num_classes=args.num_classes)
@@ -143,22 +145,21 @@ def demo(args):
     with torch.no_grad():
         output = model(img)
     _, pred = torch.max(output.data, 1)
-    f = open('../char_dict', 'rb')
-    dic = pickle.load(f)
-    for cha in dic:
-        if dic[cha] == int(pred):
-            print('predict: ', cha)
+    print(f'predict:{char_dict[int(pred[0])]}')
     f.close()
 
 if __name__ == '__main__':
-    if not os.path.exists(args.data_root + 'index.txt'): # 只生成一次
-        classes_index(args.data_root, args.data_root + 'index.txt', args.num_classes)
+    cha_dict = {}
+    num_dict = {}
+    with open(os.path.join(args.index_root,'cha_dict.json').replace('\\','/'),'r',encoding='utf-8') as f:
+        cha_dict = json.load(f)
+    num_dict = dict(zip(cha_dict.values(),cha_dict.keys()))
  
     if args.mode == 'train':
         train(args)
     elif args.mode == 'evaluate':
         evaluate(args)
     elif args.mode == 'demo':
-        demo(args)
+        demo(args, num_dict)
     else:
         print('Unknown mode')
