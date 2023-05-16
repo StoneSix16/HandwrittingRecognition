@@ -108,7 +108,7 @@ def evaluate(args):
         print("Warning: No log file")
  
     model.to(torch.device('cuda:0'))
-    test_loader = DataLoader(MyDataset(args.data_root + 'index.txt', num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
+    test_loader = DataLoader(MyDataset(args.data_root, num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
     total = 0.0
     correct = 0.0
     print("Evaluating...")
