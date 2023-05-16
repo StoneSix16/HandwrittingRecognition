@@ -16,14 +16,14 @@ import argparse # 提取命令行参数
 parser = argparse.ArgumentParser(description='EfficientNetV2 arguments')
 parser.add_argument('--mode', dest='mode', type=str, default='train', help='Mode of net')
 parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='Epoch number of training')
-parser.add_argument('--batch_size', dest='batch_size', type=int, default=512, help='Value of batch size')
+parser.add_argument('--batch_size', dest='batch_size', type=int, default=256, help='Value of batch size')
 parser.add_argument('--lr', dest='lr', type=float, default=0.0001, help='Value of lr')
 parser.add_argument('--img_size', dest='img_size', type=int, default=32, help='reSize of input image')
 parser.add_argument('--index_root', dest='index_root', type=str, default='./data/', help='Path to index.json')
 parser.add_argument('--data_root', dest='data_root', type=str, default='./data/', help='Path to data')
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
-parser.add_argument('--num_classes', dest='num_classes', type=int, default=3755, help='Classes of character')
-parser.add_argument('--demo_img', dest='demo_img', type=str, default='../asserts/fo2.png', help='Path to demo image')
+parser.add_argument('--num_classes', dest='num_classes', type=int, default=3926, help='Classes of character')
+parser.add_argument('--demo_img', dest='demo_img', type=str, default='./asserts/wen.png', help='Path to demo image')
 args = parser.parse_args()
 
 def train(args):
@@ -108,19 +108,29 @@ def evaluate(args):
         print("Warning: No log file")
  
     model.to(torch.device('cuda:0'))
+    #测试时shuffle会影响测试结果？
     test_loader = DataLoader(MyDataset(args.data_root, num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
     total = 0.0
     correct = 0.0
+    #total&correct for a group of batches
+    _total = 0.0
+    _correct = 0.0
     print("Evaluating...")
     with torch.no_grad():
         for i, data in enumerate(test_loader):
             inputs, labels = data[0].cuda(), data[1].cuda()
             outputs = model(inputs)
             _, predict = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predict == labels).sum().item()
+            _total += labels.size(0)
+            _correct += (predict == labels).sum().item()
+            total += _total
+            correct += _correct
+            if i % 20 == 19:
+                print(f'total:{_total}, correct:{_correct}, acc:{correct/total}')
+                _total = 0.0
+                _correct = 0.0
     acc = correct / total * 100
-    print('Accuracy'': ', acc, '%')
+    print(f'acc:{acc}%')
 
 def demo(args, char_dict):
     print('==Demo EfficientNetV2===')
@@ -144,8 +154,12 @@ def demo(args, char_dict):
  
     with torch.no_grad():
         output = model(img)
-    _, pred = torch.max(output.data, 1)
-    print(f'predict:{char_dict[int(pred[0])]}')
+    _, predict = torch.sort(output,descending=True)
+    # value, pred = torch.max(output.data, 1)
+    # print(value[0,:5],pred[0,:5])
+    chas = predict[0,:5].numpy().tolist()
+    print(chas)
+    print(f'predict:{[char_dict[int(chas[i])] for i in range(len(chas))]}')
     f.close()
 
 if __name__ == '__main__':
