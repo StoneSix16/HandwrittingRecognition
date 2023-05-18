@@ -3,14 +3,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as  F
 import torch.optim as optim
-import pickle
 import json
 from torchvision import transforms
-from efficientnet_v2 import efficientnetv2_s
 from torch.utils.data import DataLoader
 from PIL import Image
-from MyDataset import MyDataset
-import Utils
+from . import MyDataset,Utils
+from .efficientnet_v2 import efficientnetv2_s
 import argparse # 提取命令行参数
 
 parser = argparse.ArgumentParser(description='EfficientNetV2 arguments')
@@ -23,7 +21,8 @@ parser.add_argument('--index_root', dest='index_root', type=str, default='./data
 parser.add_argument('--data_root', dest='data_root', type=str, default='./data/', help='Path to data')
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
 parser.add_argument('--num_classes', dest='num_classes', type=int, default=3926, help='Classes of character')
-parser.add_argument('--demo_img', dest='demo_img', type=str, default='./asserts/wen.png', help='Path to demo image')
+parser.add_argument('--model_path', dest='model_path', type=str, default='./efficientnet_20.pth', help='model for test')
+parser.add_argument('--img_path', dest='img_path', type=str, default='./asserts/wen.png', help='Path to demo image')
 args = parser.parse_args()
 
 def train(args):
@@ -134,12 +133,12 @@ def evaluate(args):
 
 def demo(args, char_dict):
     print('==Demo EfficientNetV2===')
-    print('Input Image: ', args.demo_img)
+    print('Input Image: ', args.img_path)
     # 这个地方要和train一致，不过colorJitter可有可无
     transform = transforms.Compose(
         [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    img = Image.open(args.demo_img).convert('RGB')
+    img = Image.open(args.img_path).convert('RGB')
     img = transform(img)
     img = img.unsqueeze(0) # 增维
     model = efficientnetv2_s(num_classes=args.num_classes)
@@ -161,6 +160,23 @@ def demo(args, char_dict):
     print(chas)
     print(f'predict:{[char_dict[int(chas[i])] for i in range(len(chas))]}')
     f.close()
+
+def get_recognition_results(imgs):
+    model = efficientnetv2_s(num_classes=args.num_classes)
+    model.eval()
+    ret_chars = []
+    transform = transforms.Compose(
+    [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+    for img in len(imgs):
+        img = transform(img)
+        img = img.unsqueeze(0) # 增维
+        output = model(img)
+        _, predict = torch.max(output.data, 1)
+        ret_chars.append(int(predict.item()))
+    return ret_chars
+
+
 
 if __name__ == '__main__':
     cha_dict = {}
