@@ -17,13 +17,13 @@ parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='Epoch n
 parser.add_argument('--batch_size', dest='batch_size', type=int, default=256, help='Value of batch size')
 parser.add_argument('--lr', dest='lr', type=float, default=0.0001, help='Value of lr')
 parser.add_argument('--img_size', dest='img_size', type=int, default=32, help='reSize of input image')
-parser.add_argument('--index_root', dest='index_root', type=str, default='./data/', help='Path to index.json')
 parser.add_argument('--data_root', dest='data_root', type=str, default='./data/', help='Path to data')
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
 parser.add_argument('--num_classes', dest='num_classes', type=int, default=3926, help='Classes of character')
+parser.add_argument('--index_path', dest='index_path', type=str, default='./cha2label.json', help='Path to index.json')
 parser.add_argument('--model_path', dest='model_path', type=str, default='./efficientnet_20.pth', help='model for test')
 parser.add_argument('--img_path', dest='img_path', type=str, default='./asserts/wen.png', help='Path to demo image')
-args = parser.parse_args()
+args = parser.parse_args(namespace=argparse.Namespace())
 
 def train(args):
     print("===Train EffNetV2===")
@@ -161,29 +161,11 @@ def demo(args, char_dict):
     print(f'predict:{[char_dict[int(chas[i])] for i in range(len(chas))]}')
     f.close()
 
-def get_recognition_results(imgs):
-    model = efficientnetv2_s(num_classes=args.num_classes)
-    model.eval()
-    ret_chars = []
-    transform = transforms.Compose(
-    [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
-    for img in len(imgs):
-        img = transform(img)
-        img = img.unsqueeze(0) # 增维
-        output = model(img)
-        _, predict = torch.max(output.data, 1)
-        ret_chars.append(int(predict.item()))
-    return ret_chars
-
-
 
 if __name__ == '__main__':
-    cha_dict = {}
     num_dict = {}
-    with open(os.path.join(args.index_root,'cha_dict.json').replace('\\','/'),'r',encoding='utf-8') as f:
-        cha_dict = json.load(f)
-    num_dict = dict(zip(cha_dict.values(),cha_dict.keys()))
+    with open(args.index_path,'r',encoding='utf-8') as f:
+        num_dict = json.load(f)
  
     if args.mode == 'train':
         train(args)
