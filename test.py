@@ -7,8 +7,8 @@ import json
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from PIL import Image
-from . import MyDataset,Utils
-from .efficientnet_v2 import efficientnetv2_s
+import MyDataset,Utils
+from efficientnet_v2 import efficientnetv2_s
 import argparse # 提取命令行参数
 
 parser = argparse.ArgumentParser(description='EfficientNetV2 arguments')
@@ -158,7 +158,7 @@ def demo(args, char_dict):
     # print(value[0,:5],pred[0,:5])
     chas = predict[0,:5].numpy().tolist()
     print(chas)
-    print(f'predict:{[char_dict[int(chas[i])] for i in range(len(chas))]}')
+    print(f'predict:{[char_dict[str(chas[i])] for i in range(len(chas))]}')
     f.close()
 
 
