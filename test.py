@@ -14,9 +14,9 @@ import argparse # 提取命令行参数
 parser = argparse.ArgumentParser(description='EfficientNetV2 arguments')
 parser.add_argument('--mode', dest='mode', type=str, default='train', help='Mode of net')
 parser.add_argument('--epoch', dest='epoch', type=int, default=50, help='Epoch number of training')
-parser.add_argument('--batch_size', dest='batch_size', type=int, default=256, help='Value of batch size')
-parser.add_argument('--lr', dest='lr', type=float, default=0.0001, help='Value of lr')
-parser.add_argument('--img_size', dest='img_size', type=int, default=32, help='reSize of input image')
+parser.add_argument('--batch_size', dest='batch_size', type=int, default=512, help='Value of batch size')
+parser.add_argument('--lr', dest='lr', type=float, default=0.001, help='Value of lr')
+parser.add_argument('--img_size', dest='img_size', type=int, default=64, help='reSize of input image')
 parser.add_argument('--data_root', dest='data_root', type=str, default='./data/', help='Path to data')
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
 parser.add_argument('--num_classes', dest='num_classes', type=int, default=3926, help='Classes of character')
@@ -31,7 +31,8 @@ def train(args):
     transform = transforms.Compose(
         [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-         transforms.ColorJitter()])  
+         transforms.ColorJitter(brightness=0.15,contrast=0.25,saturation=0.08,hue=0.15),
+         transforms.RandomAffine(degrees=20,shear=15)])  
  
     train_set = MyDataset(args.data_root, num_class=args.num_classes, transforms=transform)
     train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True)
@@ -42,8 +43,8 @@ def train(args):
     model.train()
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    # 学习率调整函数，不一定要这样做，可以自定义
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.5)
+    # 学习率调整函数，在训练效果下降时，会降低学习率以进一步微调模型
+    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', patience=2, factor=0.3)
     print("load model...")
     
     # 加载最近保存了的参数
@@ -90,11 +91,11 @@ def train(args):
 
 def evaluate(args):
     print("===Evaluate EffNetV2===")
-    # 这个地方要和train一致，不过colorJitter可有可无
+    # 在图像大小和正则化方面与训练集保持一致
     transform = transforms.Compose(
         [transforms.Resize((args.img_size, args.img_size)), transforms.ToTensor(),
          transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-         transforms.ColorJitter()])
+        ])
  
     model = efficientnetv2_s(num_classes=args.num_classes)
     model.eval()
@@ -107,7 +108,6 @@ def evaluate(args):
         print("Warning: No log file")
  
     model.to(torch.device('cuda:0'))
-    #测试时shuffle会影响测试结果？
     test_loader = DataLoader(MyDataset(args.data_root, num_class=args.num_classes, transforms=transform),batch_size=args.batch_size, shuffle=False)
     total = 0.0
     correct = 0.0
