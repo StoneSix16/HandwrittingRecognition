@@ -13,8 +13,10 @@ from efficientnet_v2 import efficientnetv2_s
 class Recognition():
     def __init__(self,model_path,index_path):
         self.model_path = model_path
-        self.index_path = index_path
-    def recognise(self,imgs):
+        self.label2cha_dict = {}
+        with open(index_path,'r',encoding='utf-8') as f:
+            self.label2cha_dict = json.load(f)
+    def recognise(self,raw_imgs):
         # init params
         num_classes = 3926
         img_size = 32
@@ -30,19 +32,19 @@ class Recognition():
         transform = transforms.Compose(
         [transforms.Resize((img_size, img_size)), transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])
+        transback = transforms.ToPILImage(mode='RGB') 
 
-        for i,img in enumerate(imgs):
+        imgs = []
+        for i,img in enumerate(raw_imgs):
             grayimg = cv2.cvtColor(np.asarray(img),cv2.COLOR_RGB2GRAY)
             _,newimg = cv2.threshold(grayimg,127,255,cv2.THRESH_BINARY)
             img = Image.fromarray(newimg).convert('RGB')
-            imgs[i] = transform(img)
+            imgs.append(transform(img))
 
-        ret_chars = []
         output = model(torch.stack(imgs))
-
-        with open(self.index_path,'r',encoding='utf-8') as f:
-            label2cha_dict = json.load(f)
-        _, predict = torch.max(output.data, 1)
-        ret_chars = [label2cha_dict[str(out.item())] for out in predict]
-        return ret_chars
+        _, predict = torch.topk(output.data, 5, 1)
+        chars = []
+        for line in predict:
+            chars.append([self.label2cha_dict[str(i.item())] for i in line])
+        return [transback(img) for img in imgs],chars
     
