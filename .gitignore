@@ -4,4 +4,4 @@ raw_data
 asserts
 testfile.py
 HWDB1.1.zip
-efficientnet_20.pth
+*.pth

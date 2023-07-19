@@ -22,7 +22,7 @@ parser.add_argument('--data_root', dest='data_root', type=str, default='./data/'
 parser.add_argument('--log_root', dest='log_root', type=str, default='./log/', help='Path to model.pth')
 parser.add_argument('--num_classes', dest='num_classes', type=int, default=3926, help='Classes of character')
 parser.add_argument('--index_path', dest='index_path', type=str, default='./label2cha.json', help='Path to index.json')
-parser.add_argument('--model_path', dest='model_path', type=str, default='./efficientnet_20.pth', help='model for test')
+parser.add_argument('--model_path', dest='model_path', type=str, default='./efficientnet_45.pth', help='model for test')
 parser.add_argument('--img_path', dest='img_path', type=str, default='./asserts/wen.png', help='Path to demo image')
 args = parser.parse_args(namespace=argparse.Namespace())
 
